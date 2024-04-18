@@ -8,6 +8,7 @@ class Game {
     posY = 240;
     gravity = 1.5;
     score = 0;
+    highScore = localStorage.getItem('highScore') ? localStorage.getItem('highScore') : 0;
 
     pipes = [];
     pipesGap = 120;
@@ -74,12 +75,62 @@ class Game {
     updateGame = () => {
         // logika gry
         this.addGravity();
+        this.checkCollision();
 
         this.render();
     }
 
     addGravity = () => {
         this.posY += this.gravity;
+    }
+
+    checkCollision = () => {
+        if (this.posY > this.canvas.height - this.bird.height) {
+            this.moveUp();
+        }
+
+        if (this.posY < 0) {
+            this.posY = 0;
+        }
+
+        const pipesToCheck = [...this.pipes];
+        const bX = this.posX;
+        const bY = this.posY;
+        const bW = this.bird.width;
+        const bH = this.bird.height;
+
+        pipesToCheck.forEach(pipe => {
+            // Czy kaczka w zasięgu pipe na osi x
+            if (bX + bH > pipe.top.x && bX <= pipe.top.x + pipe.top.width) {
+                // Kaczka zawiera się na osi x wewnątrz pipe
+
+                if (bY < pipe.top.y + pipe.top.height || bY + bH > pipe.bottom.y) {   
+                    // Kolizja!
+                    this.restart();
+                }
+            }
+
+            if (pipe.top.x == -1) {
+                this.score++;
+
+                if (this.score % 2 == 0 && this.pipesGap > 110) {
+                    this.pipesGap--;
+                }
+            }
+        });
+    }
+
+    restart = () => {
+        if (this.highScore < this.score) {
+            this.highScore = this.score;
+            localStorage.setItem('highScore', this.highScore);
+        }
+        this.posX = 30;
+        this.score = 0;
+
+        this.pipes = [];
+        this.pipesGap = 120;
+        this.addPipe();
     }
 
     render = () => {
@@ -92,6 +143,7 @@ class Game {
         this.context.fillStyle = '#FFF';
         this.context.font = "20px Verdana";
         this.context.fillText("Punkty: " + this.score, 20, 20)
+        this.context.fillText("Najlepszy wynik " + this.highScore, 190, 20)
     }
 
     drawPipes = () => {
